@@ -15,10 +15,41 @@ import numpy as np
 # https://dl.djicdn.com/downloads/inspire_3/Recommended_Workflow_for_Editing_CinemaDNG_Files_EN.pdf
 DJI_EXTRA_EV = 1.4
 
+# DJI color matrices are defined in their whitepaper. Page 4.
+# https://dl.djicdn.com/downloads/zenmuse+x7/20171010/D-Log_D-Gamut_Whitepaper.pdf
+#
+# Below matrix can also be computed from given primaries and D65 information. Page 4.
+# DJI D Gamut Linear -> CIE XYZ (D65)
+M_DG_to_XYZ = np.array(
+    [
+        [0.6482, 0.1940, 0.1082],
+        [0.2830, 0.8132, -0.0962],
+        [-0.0183, -0.0832, 1.1903],
+    ]
+)
 
-def apply3x3(matrix: np.array, rgb: np.array) -> np.ndarray:
+# CIE XYZ (D65) -> D Gamut Linear
+M_XYZ_to_DG = np.linalg.inv(M_DG_to_XYZ)
+
+# Rec.2020 -> CIE XYZ (D65)
+M_Rec2020_to_XYZ = np.array(
+    [
+        [0.636958, 0.144617, 0.168881],
+        [0.2627, 0.6781, 0.0593],
+        [0.0, 0.0281, 0.0610],
+    ]
+)
+
+# CIE XYZ (D65) -> Rec.2020
+M_XYZ_to_Rec20202 = np.linalg.inv(M_Rec2020_to_XYZ)
+
+# Rec2020 luma weights
+REC2020_LUMA = np.array([0.2627, 0.6780, 0.0593])
+
+
+def apply3x3(matrix: np.ndarray, rgb: np.ndarray) -> np.ndarray:
     """
     Apply a 3x3 color matrix
     """
     h, w, _ = rgb.shape
-    return (matrix @ rgb.shape(-1, 3).T).T.reshape(h, w, 3)
+    return (matrix @ rgb.reshape(-1, 3).T).T.reshape(h, w, 3)
